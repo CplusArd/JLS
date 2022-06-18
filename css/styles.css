@@ -11582,10 +11582,7 @@ footer a:hover, footer a:active, footer a:focus {
   max-width: 10rem;
 }
 @media (min-width: 576px) {
-  .masthead .masthead-device-mockup .circle {
-    width: 70%;
-    display: block;
-  }
+
   .masthead .masthead-device-mockup .device-wrapper {
     max-width: 12.5rem;
   }
