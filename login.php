@@ -147,23 +147,21 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     
     <div class="masthead container" style="background-color: #FEDE3B">
             <div class="wrapper">
-        <h2>Login ConfiguroWeb</h2>
-        <p>Por favor, complete sus credenciales para iniciar sesión.</p>
+            <h3 class="font-alt">Iniciar Sesion</h3>
+            <p>Por favor, complete sus credenciales para iniciar sesión.</p>
         <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post">
             <div class="form-group <?php echo (!empty($username_err)) ? 'has-error' : ''; ?>">
-                <label>Usuario</label>
-                <input type="text" name="username" class="form-control" value="<?php echo $username; ?>">
+                <input type="text" name="username" class="form-control" value="<?php echo $username; ?>" placeholder="Usuario">
                 <span class="help-block"><?php echo $username_err; ?></span>
             </div>    
-            <div class="form-group <?php echo (!empty($password_err)) ? 'has-error' : ''; ?>">
-                <label>Contraseña</label>
-                <input type="password" name="password" class="form-control">
+            <div class="form-group mt-3<?php echo (!empty($password_err)) ? 'has-error' : ''; ?>">
+                <input type="password" name="password" class="form-control" placeholder="Contraseña">
                 <span class="help-block"><?php echo $password_err; ?></span>
             </div>
-            <div class="form-group">
+            <div class="form-group mt-3">
                 <input type="submit" class="btn btn-primary" value="Ingresar">
             </div>
-            <p>¿No tienes una cuenta? <a href="register.php">Regístrate ahora</a>.</p>
+            <p class="mt-3">¿No tienes una cuenta? <a href="register.php">Regístrate ahora</a>.</p>
         </form>
     </div>    
     </div>
