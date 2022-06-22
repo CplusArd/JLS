@@ -1,3 +1,93 @@
+<?php
+// Initialize the session
+session_start();
+ 
+// Check if the user is already logged in, if yes then redirect him to welcome page
+if(isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true){
+  header("location: welcome.php");
+  exit;
+}
+ 
+// Include config file
+require_once "config.php";
+ 
+// Define variables and initialize with empty values
+$username = $password = "";
+$username_err = $password_err = "";
+ 
+// Processing form data when form is submitted
+if($_SERVER["REQUEST_METHOD"] == "POST"){
+ 
+    // Check if username is empty
+    if(empty(trim($_POST["username"]))){
+        $username_err = "Por favor ingrese su usuario.";
+    } else{
+        $username = trim($_POST["username"]);
+    }
+    
+    // Check if password is empty
+    if(empty(trim($_POST["password"]))){
+        $password_err = "Por favor ingrese su contraseña.";
+    } else{
+        $password = trim($_POST["password"]);
+    }
+    
+    // Validate credentials
+    if(empty($username_err) && empty($password_err)){
+        // Prepare a select statement
+        $sql = "SELECT id, username, password FROM users WHERE username = ?";
+        
+        if($stmt = mysqli_prepare($link, $sql)){
+            // Bind variables to the prepared statement as parameters
+            mysqli_stmt_bind_param($stmt, "s", $param_username);
+            
+            // Set parameters
+            $param_username = $username;
+            
+            // Attempt to execute the prepared statement
+            if(mysqli_stmt_execute($stmt)){
+                // Store result
+                mysqli_stmt_store_result($stmt);
+                
+                // Check if username exists, if yes then verify password
+                if(mysqli_stmt_num_rows($stmt) == 1){                    
+                    // Bind result variables
+                    mysqli_stmt_bind_result($stmt, $id, $username, $hashed_password);
+                    if(mysqli_stmt_fetch($stmt)){
+                        if(password_verify($password, $hashed_password)){
+                            // Password is correct, so start a new session
+                            session_start();
+                            
+                            // Store data in session variables
+                            $_SESSION["loggedin"] = true;
+                            $_SESSION["id"] = $id;
+                            $_SESSION["username"] = $username;                            
+                            
+                            // Redirect user to welcome page
+                            header("location: welcome.php");
+                        } else{
+                            // Display an error message if password is not valid
+                            $password_err = "La contraseña que has ingresado no es válida.";
+                        }
+                    }
+                } else{
+                    // Display an error message if username doesn't exist
+                    $username_err = "No existe cuenta registrada con ese nombre de usuario.";
+                }
+            } else{
+                echo "Algo salió mal, por favor vuelve a intentarlo.";
+            }
+        }
+        
+        // Close statement
+        mysqli_stmt_close($stmt);
+    }
+    
+    // Close connection
+    mysqli_close($link);
+}
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -20,6 +110,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,400;1,400&amp;display=swap"
         rel="stylesheet" />
     <link href="css/styles.css" rel="stylesheet" />
+    <style type="text/css">
+        body{ font: 14px sans-serif; }
+        .wrapper{ width: 350px; padding: 20px; }
+    </style>
 </head>
 
 <body id="page-top" class="" style="background-color: #FEDE3B;">
@@ -51,182 +145,29 @@
         </div>
     </nav>
     
-
-    <header class="masthead container" style="background-color: #FEDE3B;">
-        <div class="container px-5">
-            <div class="row gx-5 align-items-center">
-                <div class="col-lg-6">
-                    <div class="mb-5 mb-lg-0 text-center text-lg-start">
-
-                        <h1 class="font-alt">Coming Soon</h1>
-
-                        <p class="lead fw-normal text-dark mb-5">We are expanding our app to offer quicker solutions.
-                        </p>
-                        <div class="d-flex flex-column flex-lg-row align-items-center">
-                            <a class="me-lg-3 mb-4 mb-lg-0" href="#!"><img class="app-badge"
-                                    src="assets/img/google-play-badge.svg" alt="..." /></a>
-                            <a href="#!"><img class="app-badge" src="assets/img/app-store-badge.svg" alt="..." /></a>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-6">
-                    <div class="masthead-device-mockup">
-                        <div class="device-wrapper">
-                            <div class="device" data-device="iPhoneX" data-orientation="portrait" data-color="black">
-                                <div class="screen bg-black">
-
-                                    <video muted="muted" autoplay="" loop="" style="max-width: 100%; height: 100%">
-                                        <source src="assets/img/demo-screen.mp4" type="video/mp4" />
-                                    </video>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+    <div class="masthead container" style="background-color: #FEDE3B">
+            <div class="wrapper">
+        <h2>Login ConfiguroWeb</h2>
+        <p>Por favor, complete sus credenciales para iniciar sesión.</p>
+        <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post">
+            <div class="form-group <?php echo (!empty($username_err)) ? 'has-error' : ''; ?>">
+                <label>Usuario</label>
+                <input type="text" name="username" class="form-control" value="<?php echo $username; ?>">
+                <span class="help-block"><?php echo $username_err; ?></span>
+            </div>    
+            <div class="form-group <?php echo (!empty($password_err)) ? 'has-error' : ''; ?>">
+                <label>Contraseña</label>
+                <input type="password" name="password" class="form-control">
+                <span class="help-block"><?php echo $password_err; ?></span>
             </div>
-        </div>
-    </header>
-
-    <aside class="text-center" style="background-color: #d8d4d4; width: 100%;">
-        <div class="container px-5">
-            <div class="row gx-5 justify-content-center">
-                <div class="col-12 col-md-12 col-xl-12">
-                    <div class="col-12 col-md-12 col-xl-12 text-center">
-                        <h3 class="font-alt">It's 4U</h3>
-                        <p class="text-muted mb-0">Simple, Comfortable, Intuitive, Modern</p>
-                    </div>
-                </div>
+            <div class="form-group">
+                <input type="submit" class="btn btn-primary" value="Ingresar">
             </div>
-            <div class="row gx-5 justify-content-center">
-                <div class="col-12 col-md-12">
-                    <div class="px-5 px-sm-0"><img class="img-fluid rounded-circle" />
-                        <video muted="muted" autoplay="" loop="" style="max-width: 100%; height: 100%">
-                            <source src="assets/video/video2-faster.mp4" type="video/mp4" />
-                        </video>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </aside>
-
-    <section id="features" class="container">
-        <div class="container px-5">
-            <div class="row gx-5 align-items-center">
-                <div class="col-lg-8 order-lg-1 mb-5 mb-lg-0">
-                    <div class="container-fluid px-5">
-                        <div class="row gx-5">
-                            <div class="col-md-12 mb-12">
-                                <!-- Feature item-->
-                                <div class="text-center">
-                                    <i class="bi-phone icon-feature text-gradient d-block mb-3"></i>
-                                    <h3 class="font-alt">About Us</h3>
-                                    <p class="text-muted mb-0">We are a young Bank that seeks to make your life more
-                                        comfortable</p>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="text-center p-2">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="currentColor"
-                                        class="bi bi-people-fill" viewBox="0 0 16 16">
-                                        <path
-                                            d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1H7zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" />
-                                        <path fill-rule="evenodd"
-                                            d="M5.216 14A2.238 2.238 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.325 6.325 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1h4.216z" />
-                                        <path d="M4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z" />
-                                    </svg>
-                                    <h3 class="font-alt p-2">Join us for free</h3>
-                                    <p class="text-muted mb-0">Create your account FREE!</p>
-                                </div>
-                            </div>
-                            <div class="col-md-6 mb-5">
-                                <div class="text-center p-2">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="currentColor"
-                                        class="bi bi-laptop" viewBox="0 0 16 16">
-                                        <path
-                                            d="M13.5 3a.5.5 0 0 1 .5.5V11H2V3.5a.5.5 0 0 1 .5-.5h11zm-11-1A1.5 1.5 0 0 0 1 3.5V12h14V3.5A1.5 1.5 0 0 0 13.5 2h-11zM0 12.5h16a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 0 12.5z" />
-                                    </svg>
-                                    <h3 class="font-alt p-2">Online</h3>
-                                    <p class="text-muted mb-0">We are the leading private bank in the Argentine
-                                        financial system in terms of savings and credit volume.</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-5 mb-md-0">
-                                <div class="text-center p-2 ">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="currentColor"
-                                        class="bi bi-bank2" viewBox="0 0 16 16">
-                                        <path
-                                            d="M8.277.084a.5.5 0 0 0-.554 0l-7.5 5A.5.5 0 0 0 .5 6h1.875v7H1.5a.5.5 0 0 0 0 1h13a.5.5 0 1 0 0-1h-.875V6H15.5a.5.5 0 0 0 .277-.916l-7.5-5zM12.375 6v7h-1.25V6h1.25zm-2.5 0v7h-1.25V6h1.25zm-2.5 0v7h-1.25V6h1.25zm-2.5 0v7h-1.25V6h1.25zM8 4a1 1 0 1 1 0-2 1 1 0 0 1 0 2zM.5 15a.5.5 0 0 0 0 1h15a.5.5 0 1 0 0-1H.5z" />
-                                    </svg>
-                                    <h3 class="font-alt">Bank</h3>
-                                    <p class="text-muted">We are one of the leading banks in payment methods, foreign
-                                        trade, transactional services, and cash management. And also one of the main
-                                        players in the stock markets is government bonds and foreign exchange.
-                                    </p>
-                                </div>
-                            </div>
-                            <div class="col-md-6 mb-5">
-
-                                <div class="text-center p-2">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="currentColor"
-                                        class="bi bi-building" viewBox="0 0 16 16">
-                                        <path fill-rule="evenodd"
-                                            d="M14.763.075A.5.5 0 0 1 15 .5v15a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5V14h-1v1.5a.5.5 0 0 1-.5.5h-9a.5.5 0 0 1-.5-.5V10a.5.5 0 0 1 .342-.474L6 7.64V4.5a.5.5 0 0 1 .276-.447l8-4a.5.5 0 0 1 .487.022zM6 8.694 1 10.36V15h5V8.694zM7 15h2v-1.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5V15h2V1.309l-7 3.5V15z" />
-                                        <path
-                                            d="M2 11h1v1H2v-1zm2 0h1v1H4v-1zm-2 2h1v1H2v-1zm2 0h1v1H4v-1zm4-4h1v1H8V9zm2 0h1v1h-1V9zm-2 2h1v1H8v-1zm2 0h1v1h-1v-1zm2-2h1v1h-1V9zm0 2h1v1h-1v-1zM8 7h1v1H8V7zm2 0h1v1h-1V7zm2 0h1v1h-1V7zM8 5h1v1H8V5zm2 0h1v1h-1V5zm2 0h1v1h-1V5zm0-2h1v1h-1V3z" />
-                                    </svg>
-                                    <h3 class="font-alt p-2">Society</h3>
-                                    <p class="text-muted mb-0">We encourage the link with higher education institutions
-                                        through Santander University. During 2017 we reached agreements with 86 public
-                                        and private universities; 103 universities participated in a scholarship, award,
-                                        internship, or training program, and 40 have the Intelligent University Card
-                                        service.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-4 order-lg-0">
-                    <div class="features-device-mockup">
-                        <div class="device-wrapper">
-                            <div class="device" data-device="iPhoneX" data-orientation="portrait" data-color="black">
-                                <div class="screen bg-black">
-                                    <video muted="muted" autoplay="" loop="" style="max-width: 100%; height: 100%">
-                                        <source src="assets/img/demo-screen.mp4" type="video/mp4" />
-                                    </video>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section class="text-white" style="background-color: black">
-        <div class="container px-5">
-            <div class="row gx-5 align-items-center justify-content-center justify-content-lg-between">
-                <div class="col-12 col-md-6 col-xl-6">
-                    <h3 class=" font-alt display-4 lh-1 mb-4">Enter a new age of web design</h3>
-                    <p class="lead fw-normal text-muted mb-5 mb-lg-0"> Your Digital Bank, always
-                        with you, wherever you are</p>
-                </div>
-                <div class="col-12 col-md-6 col-xl-6">
-                    <video muted="muted" autoplay="" loop="" style="width: 100%;">
-                        <source src="assets/video/video1.mp4" type="video/mp4" />
-                    </video>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <div class="bg-black col-12 col-md-12 col-xl-12" style="width: 100%">
-        <video muted="muted" autoplay="" loop="" style="width: 100%; height: 100%;">
-            <source src="assets/video/Video3.mp4" type="video/mp4" />
-        </video>
+            <p>¿No tienes una cuenta? <a href="register.php">Regístrate ahora</a>.</p>
+        </form>
+    </div>    
     </div>
+
 
     <footer class="bg-black text-center py-5 col-12 col-md-12 col-xl-12" style="width: 100%;">
         <div class="text-white-50 small">
